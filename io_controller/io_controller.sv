@@ -656,8 +656,18 @@ begin
 			hex_val4 = 4'h6;
 		 s_rx_ack:
 			hex_val4 = 4'h7;
+         s_rx_flag:
+            hex_val4 = 4'h8;
+         s_crunch_time:
+            hex_val4 = 4'h9;
          s_tx_first:
-			hex_val4 = 4'h8;
+			hex_val4 = 4'hA;
+         s_tx_arq:
+            hex_val4 = 4'hB;
+         s_tx_retry:
+            hex_val4 = 4'hC;
+         s_clear_ioflag:
+            hex_val4 = 4'hD;
 		 default:
 			hex_val4 = 4'hE;
 	endcase
@@ -674,10 +684,12 @@ begin
 			hex_val5 = 4'h4;
 		 s_update:
 			hex_val5 = 4'h5;
-		 s_none:
+		 s_ifg:
 			hex_val5 = 4'h6;
-		 s_wtf:
+		 s_none:
 			hex_val5 = 4'h7;
+         s_wtf:
+            hex_val5 = 4'h8;
 	    default:
 			hex_val5 = 4'hE;
 	endcase

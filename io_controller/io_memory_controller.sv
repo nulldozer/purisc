@@ -1,4 +1,10 @@
 `include "ethmac/rtl/verilog/timescale.v"
+`include "io_memory_controller_defines.v"
+
+//TODO: IMPORTANT!
+// ensure that local_mem_offset is added to reads and writes wherever necessary
+
+
 //`default_nettype none
 
 //`define SIMULATION
@@ -15,7 +21,7 @@ module io_memory_controller (
     //connections to fake magics
     output  reg [31:0]  mem_addr,
     output  reg [31:0]  mem_data_w,
-    output  reg [8:0]   mem_we,
+    output  reg [4:0]   mem_we,
     output  reg         mem_gl_en,
     input       [31:0]  mem_gl_data_r,
     
@@ -59,6 +65,8 @@ reg [15:0]  n;
 reg [15:0]  length;
 reg [15:0]  last_length;
 reg [31:0]  addr_offset;
+//local memory offset 
+reg [31:0]  local_mem_offset;
 // tx information
 reg global_pointer;
 
@@ -84,7 +92,7 @@ begin
         // MAGIC signals
         mem_data_w = 32'd0;
         mem_addr = 32'd0;
-        mem_we = 9'b000000000;
+        mem_we = 5'b0;
         mem_gl_en = 0;
         // WB read signals
         arq_ack = 0;
@@ -110,7 +118,7 @@ begin
                 if(wb_adr_i < 24) begin 
                     mem_data_w = 32'd0;
                     mem_addr = 32'h2222;
-                    mem_we = 9'b000000000;
+                    mem_we = 5'b0;
                     //handled in seq logic
                     rx_ack = 1;
                 end
@@ -141,7 +149,7 @@ begin
                 // These shouldn't change
                 mem_data_w = 32'd0;
                 mem_addr = 32'h1111;
-                mem_we = 9'b000000000;
+                mem_we = 5'b0;
                 
                 // default values - remove once all paths are covered
                 arq_ack = 0;
@@ -269,7 +277,7 @@ begin
             // MAGIC signals
             mem_data_w = 32'd0;
             mem_addr = 32'h3333;
-            mem_we = 9'b000000000;
+            mem_we = 5'b0;
             // WB read signals
             arq_ack = 0;
             ack_ack = 0;
@@ -281,7 +289,7 @@ begin
             if(flag_count > 0 && flag_count < 4) begin
                 mem_data_w = 32'd1;
                 mem_addr = 32'd8200;
-                mem_we = 9'b100000000;
+                mem_we = 5'b10000;
                 rx_ack = 0;
                 if(flag_count == 3)
                     flag_ack = 1;
@@ -411,16 +419,23 @@ end
 
 always @(mem_id) begin
     case(mem_id)
-        16'h0000:   mem_id_decode = 9'b000000001;
-        16'h0001:   mem_id_decode = 9'b000000010;
-        16'h0100:   mem_id_decode = 9'b000000100;
-        16'h0101:   mem_id_decode = 9'b000001000;
-        16'h0200:   mem_id_decode = 9'b000010000;
-        16'h0201:   mem_id_decode = 9'b000100000;
-        16'h0300:   mem_id_decode = 9'b001000000;
-        16'h0301:   mem_id_decode = 9'b010000000;
-        16'h0400:   mem_id_decode = 9'b100000000;
-        default:    mem_id_decode = 9'b000000000;
+        //compute group memory
+        16'h0000:   mem_id_decode = 5'b00001;
+        16'h0001:   mem_id_decode = 5'b00001;
+        16'h0100:   mem_id_decode = 5'b00010;
+        16'h0101:   mem_id_decode = 5'b00010;
+        16'h0200:   mem_id_decode = 5'b00100;
+        16'h0201:   mem_id_decode = 5'b00100;
+        16'h0300:   mem_id_decode = 5'b01000;
+        16'h0301:   mem_id_decode = 5'b01000;
+        //global memory
+        16'h0400:   mem_id_decode = 5'b10000;
+        default:    mem_id_decode = 5'b00000;
+    endcase
+    case(mem_id[7:0])
+        8'h00:      local_mem_offset = 32'd0;
+        8'h01:      local_mem_offset = `LOCAL_MEM_SIZE/2;
+        default:    local_mem_offset = 32'd0;
     endcase
 end
 
