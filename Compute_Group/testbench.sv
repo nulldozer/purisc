@@ -116,14 +116,17 @@ begin
     // $fseek(data_file, sd, 0);
     
     //TEST 0: run initial RAM contents properly
-    //  NOTE: requires special MIF files
     //  expected: each core executes its own independent program in agreement with simulation
+    //  
+    //  in order to use the same MIF as other test cases, this testcase uses the bootloader MIF
+    //  files with the ready flat set TO 1 (TODO: is this right?) and with executable code after them which is
+    //  later overwritten by the io_controller in later test cases
     test0;
     //TEST 1: write to local memory, but don't execute
     //  expected: bootloader continues to loop without any issue
 
     //TEST 2: write executable code to local memory, set flags
-    //  extected: BOTH cores branch to executable code, start running in infinite loops
+    //  expected: BOTH cores branch to executable code, start running in infinite loops
 
     //TEST 3: write executable code to memory, run it, send return value back to io_controller
     //  expected: cores individually set flags upon completion, branch back to bootloader
@@ -133,7 +136,7 @@ endtask
 
 
 task test0;
-    integer i,result_0,result_1,f_csv_core_0,f_csv_core_1;
+    integer core_0_cycle,core_1_cycle,result_0,result_1,f_csv_core_0,f_csv_core_1;
     integer c;
 //    logic [31:0] c;
     logic [31:0] r_addr_a;
@@ -156,117 +159,127 @@ begin
     tb_cg_reset_n=1;
     
     $display("loading csv file");
-    f_csv_core_0=$fopen("../../test_cpu0.csv", "r");
-    f_csv_core_1=$fopen("../../test_cpu1.csv", "r");
+    f_csv_core_0=$fopen("../../tests/0/csv/cpu0.csv", "r");
+    f_csv_core_1=$fopen("../../tests/0/csv/cpu1.csv", "r");
     if(f_csv_core_0 == 0) begin
         $display("f_csv_core_0 is NULL");
-    end
+    end 
     if(f_csv_core_1 == 0) begin
         $display("f_csv_core_1 is NULL");
-    end
-    $display("f_csv_core_0:%d",f_csv_core_0);
-    i=0;
+    end 
+    core_0_cycle=0;
+    core_1_cycle=0;
     do begin
         @(posedge Clock_50);
+       
+        //if cpu0 isn't stalled
+        if(cg.core_0.stall == 0) begin
+            //get ideal values for CPU0 from CSV
+            result_0=$fscanf(f_csv_core_0, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", 
+                    c,r_addr_a,r_addr_b,r_addr_c,   r_data_a,r_data_b, r_data_c, 
+                    r_addr_0, r_addr_1,   r_data_0, r_data_1,
+                    we, w_data, w_addr
+            );
+            //compare to actual values of cg.core_0
+            if(c != core_0_cycle) begin
+                $display("error: cycle:%03d\ti:%3d",c,core_0_cycle);
+            end
+            if (r_addr_a != cg.core_0.r_addr_a) begin
+                $display("error: cycle:%03d\tr_addr_a:0x%8x\tcg.core_0.r_addr_a:0x%8x",c,r_addr_a,cg.core_0.r_addr_a);
+            end 
+            if (r_addr_b != cg.core_0.r_addr_b) begin
+                $display("error: cycle:%03d\tr_addr_b:0x%8x\tcg.core_0.r_addr_b:0x%8x",c,r_addr_b,cg.core_0.r_addr_b);  
+            end 
+            if (r_addr_c != cg.core_0.r_addr_c) begin
+                $display("error: cycle:%03d\tr_addr_c:0x%8x\tcg.core_0.r_addr_c:0x%8x",c,r_addr_c,cg.core_0.r_addr_c);  
+            end 
+            if (r_addr_0 != cg.core_0.r_addr_0) begin
+                $display("error: cycle:%03d\tr_addr_0:0x%8x\tcg.core_0.r_addr_0:0x%8x",c,r_addr_0,cg.core_0.r_addr_0);  
+            end 
+            if (r_addr_1 != cg.core_0.r_addr_1) begin
+                $display("error: cycle:%03d\tr_addr_1:0x%8x\tcg.core_0.r_addr_1:0x%8x",c,r_addr_1,cg.core_0.r_addr_1);  
+            end 
+            if (r_data_a != cg.core_0.r_data_a) begin
+                $display("error: cycle:%03d\tr_data_a:0x%8x\tcg.core_0.r_data_a:0x%8x",c,r_data_a,cg.core_0.r_data_a);  
+            end 
+            if (r_data_b != cg.core_0.r_data_b) begin
+                $display("error: cycle:%03d\tr_data_b:0x%8x\tcg.core_0.r_data_b:0x%8x",c,r_data_b,cg.core_0.r_data_b);  
+            end 
+            if (r_data_c != cg.core_0.r_data_c) begin
+                $display("error: cycle:%03d\tr_data_c:0x%8x\tcg.core_0.r_data_c:0x%8x",c,r_data_c,cg.core_0.r_data_c);  
+            end 
+            if (r_data_0 != cg.core_0.r_data_0) begin
+                $display("error: cycle:%03d\tr_data_0:0x%8x\tcg.core_0.r_data_0:0x%8x",c,r_data_0,cg.core_0.r_data_0);  
+            end 
+            if (r_data_1 != cg.core_0.r_data_1) begin
+                $display("error: cycle:%03d\tr_data_1:0x%8x\tcg.core_0.r_data_1:0x%8x",c,r_data_1,cg.core_0.r_data_1);  
+            end 
+            if (we != cg.core_0.we) begin
+                $display("error: cycle:%03d\twe:0x%8x\tcg.core_0.we:0x%8x\n",c,we,cg.core_0.we);
+            end 
+            if (w_data != cg.core_0.w_data) begin
+                $display("error: cycle:%03d\tw_data:0x%8x\tcg.core_0.w_data:0x%8x",c,w_data,cg.core_0.w_data);
+            end 
+            if (w_addr != cg.core_0.w_addr) begin
+                $display("error: cycle:%03d\tw_addr:0x%8x\tcg.core_0.w_addr:0x%8x",c,w_addr,cg.core_0.w_addr);
+            end
+            $display("\n");
+            core_0_cycle=core_0_cycle+1;
+        end
 
-        //TODO: verify that fscanf need newline at end of format
-        //get ideal values for CPU0 from CSV
-        result_0=$fscanf(f_csv_core_0, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", 
-                c,r_addr_a,r_addr_b,r_addr_c,   r_data_a,r_data_b, r_data_c, 
-                r_addr_0, r_addr_1,   r_data_0, r_data_1,
-                we, w_data, w_addr
-        );
-        //compare to actual values of cg.core_0
-        if(c != i) begin
-            $display("error: cycle:%03d\ti:%3d",c,i);
+        if(cg.core_1.stall == 0) begin
+            //get ideal values for CPU1 from CSV
+            result_1=$fscanf(f_csv_core_1, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", 
+                    c,r_addr_a,r_addr_b,r_addr_c,   r_data_a,r_data_b, r_data_c, 
+                    r_addr_0, r_addr_1,   r_data_0, r_data_1,
+                    we, w_data, w_addr
+            );
+            if(c != core_1_cycle) begin
+                $display("error: cycle:%03d\ti:%3d",c,core_1_cycle);
+            end 
+            //compare to actual values of cg.core_1
+            if (r_addr_a != cg.core_1.r_addr_a) begin
+                $display("error: cycle:%03d\tr_addr_a:0x%8x\tcg.core_1.r_addr_a:0x%8x",c,r_addr_a,cg.core_1.r_addr_a);
+            end 
+            if (r_addr_b != cg.core_1.r_addr_b) begin
+                $display("error: cycle:%03d\tr_addr_b:0x%8x\tcg.core_1.r_addr_b:0x%8x",c,r_addr_b,cg.core_1.r_addr_b);  
+            end 
+            if (r_addr_c != cg.core_1.r_addr_c) begin
+                $display("error: cycle:%03d\tr_addr_c:0x%8x\tcg.core_1.r_addr_c:0x%8x",c,r_addr_c,cg.core_1.r_addr_c);  
+            end 
+            if (r_addr_0 != cg.core_1.r_addr_0) begin
+                $display("error: cycle:%03d\tr_addr_0:0x%8x\tcg.core_1.r_addr_0:0x%8x",c,r_addr_0,cg.core_1.r_addr_0);  
+            end 
+            if (r_addr_1 != cg.core_1.r_addr_1) begin
+                $display("error: cycle:%03d\tr_addr_1:0x%8x\tcg.core_1.r_addr_1:0x%8x",c,r_addr_1,cg.core_1.r_addr_1);  
+            end 
+            if (r_data_a != cg.core_1.r_data_a) begin
+                $display("error: cycle:%03d\tr_data_a:0x%8x\tcg.core_1.r_data_a:0x%8x",c,r_data_a,cg.core_1.r_data_a);  
+            end 
+            if (r_data_b != cg.core_1.r_data_b) begin
+                $display("error: cycle:%03d\tr_data_b:0x%8x\tcg.core_1.r_data_b:0x%8x",c,r_data_b,cg.core_1.r_data_b);  
+            end 
+            if (r_data_c != cg.core_1.r_data_c) begin
+                $display("error: cycle:%03d\tr_data_c:0x%8x\tcg.core_1.r_data_c:0x%8x",c,r_data_c,cg.core_1.r_data_c);  
+            end 
+            if (r_data_0 != cg.core_1.r_data_0) begin
+                $display("error: cycle:%03d\tr_data_0:0x%8x\tcg.core_1.r_data_0:0x%8x",c,r_data_0,cg.core_1.r_data_0);  
+            end 
+            if (r_data_1 != cg.core_1.r_data_1) begin
+                $display("error: cycle:%03d\tr_data_1:0x%8x\tcg.core_1.r_data_1:0x%8x",c,r_data_1,cg.core_1.r_data_1);  
+            end 
+            if (we != cg.core_1.we) begin
+                $display("error: cycle:%03d\twe:0x%8x\tcg.core_1.we:0x%8x\n",c,we,cg.core_1.we);
+            end 
+            if (w_data != cg.core_1.w_data) begin
+                $display("error: cycle:%03d\tw_data:0x%8x\tcg.core_1.w_data:0x%8x",c,w_data,cg.core_1.w_data);
+            end 
+            if (w_addr != cg.core_1.w_addr) begin
+                $display("error: cycle:%03d\tw_addr:0x%8x\tcg.core_1.w_addr:0x%8x",c,w_addr,cg.core_1.w_addr);
+            end
+            $display("\n");
+            core_1_cycle=core_1_cycle+1;
         end
-        if (r_addr_a != cg.core_0.r_addr_a) begin
-            $display("error: cycle:%03d\tr_addr_a:0x%8x\tcg.core_0.r_addr_a:0x%8x",c,r_addr_a,cg.core_0.r_addr_a);
-        end 
-        if (r_addr_b != cg.core_0.r_addr_b) begin
-            $display("error: cycle:%03d\tr_addr_b:0x%8x\tcg.core_0.r_addr_b:0x%8x",c,r_addr_b,cg.core_0.r_addr_b);  
-        end 
-        if (r_addr_c != cg.core_0.r_addr_c) begin
-            $display("error: cycle:%03d\tr_addr_c:0x%8x\tcg.core_0.r_addr_c:0x%8x",c,r_addr_c,cg.core_0.r_addr_c);  
-        end 
-        if (r_addr_0 != cg.core_0.r_addr_0) begin
-            $display("error: cycle:%03d\tr_addr_0:0x%8x\tcg.core_0.r_addr_0:0x%8x",c,r_addr_0,cg.core_0.r_addr_0);  
-        end 
-        if (r_addr_1 != cg.core_0.r_addr_1) begin
-            $display("error: cycle:%03d\tr_addr_1:0x%8x\tcg.core_0.r_addr_1:0x%8x",c,r_addr_1,cg.core_0.r_addr_1);  
-        end 
-        if (r_data_a != cg.core_0.r_data_a) begin
-            $display("error: cycle:%03d\tr_data_a:0x%8x\tcg.core_0.r_data_a:0x%8x",c,r_data_a,cg.core_0.r_data_a);  
-        end 
-        if (r_data_b != cg.core_0.r_data_b) begin
-            $display("error: cycle:%03d\tr_data_b:0x%8x\tcg.core_0.r_data_b:0x%8x",c,r_data_b,cg.core_0.r_data_b);  
-        end 
-        if (r_data_c != cg.core_0.r_data_c) begin
-            $display("error: cycle:%03d\tr_data_c:0x%8x\tcg.core_0.r_data_c:0x%8x",c,r_data_c,cg.core_0.r_data_c);  
-        end 
-        if (r_data_0 != cg.core_0.r_data_0) begin
-            $display("error: cycle:%03d\tr_data_0:0x%8x\tcg.core_0.r_data_0:0x%8x",c,r_data_0,cg.core_0.r_data_0);  
-        end 
-        if (r_data_1 != cg.core_0.r_data_1) begin
-            $display("error: cycle:%03d\tr_data_1:0x%8x\tcg.core_0.r_data_1:0x%8x",c,r_data_1,cg.core_0.r_data_1);  
-        end 
-        if (we != cg.core_0.we) begin
-            $display("error: cycle:%03d\twe:0x%8x\tcg.core_0.we:0x%8x\n",c,we,cg.core_0.we);
-        end 
-        if (w_data != cg.core_0.w_data) begin
-            $display("error: cycle:%03d\tw_data:0x%8x\tcg.core_0.w_data:0x%8x",c,w_data,cg.core_0.w_data);
-        end 
-        if (w_addr != cg.core_0.w_addr) begin
-            $display("error: cycle:%03d\tw_addr:0x%8x\tcg.core_0.w_addr:0x%8x",c,w_addr,cg.core_0.w_addr);
-        end
-
-        //get ideal values for CPU1 from CSV
-        result_1=$fscanf(f_csv_core_1, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", 
-                c,r_addr_a,r_addr_b,r_addr_c,   r_data_a,r_data_b, r_data_c, 
-                r_addr_0, r_addr_1,   r_data_0, r_data_1,
-                we, w_data, w_addr
-        );
-        //compare to actual values of cg.core_1
-        if (r_addr_a != cg.core_1.r_addr_a) begin
-            $display("error: cycle:%03d\tr_addr_a:0x%8x\tcg.core_1.r_addr_a:0x%8x",c,r_addr_a,cg.core_1.r_addr_a);
-        end 
-        if (r_addr_b != cg.core_1.r_addr_b) begin
-            $display("error: cycle:%03d\tr_addr_b:0x%8x\tcg.core_1.r_addr_b:0x%8x",c,r_addr_b,cg.core_1.r_addr_b);  
-        end 
-        if (r_addr_c != cg.core_1.r_addr_c) begin
-            $display("error: cycle:%03d\tr_addr_c:0x%8x\tcg.core_1.r_addr_c:0x%8x",c,r_addr_c,cg.core_1.r_addr_c);  
-        end 
-        if (r_addr_0 != cg.core_1.r_addr_0) begin
-            $display("error: cycle:%03d\tr_addr_0:0x%8x\tcg.core_1.r_addr_0:0x%8x",c,r_addr_0,cg.core_1.r_addr_0);  
-        end 
-        if (r_addr_1 != cg.core_1.r_addr_1) begin
-            $display("error: cycle:%03d\tr_addr_1:0x%8x\tcg.core_1.r_addr_1:0x%8x",c,r_addr_1,cg.core_1.r_addr_1);  
-        end 
-        if (r_data_a != cg.core_1.r_data_a) begin
-            $display("error: cycle:%03d\tr_data_a:0x%8x\tcg.core_1.r_data_a:0x%8x",c,r_data_a,cg.core_1.r_data_a);  
-        end 
-        if (r_data_b != cg.core_1.r_data_b) begin
-            $display("error: cycle:%03d\tr_data_b:0x%8x\tcg.core_1.r_data_b:0x%8x",c,r_data_b,cg.core_1.r_data_b);  
-        end 
-        if (r_data_c != cg.core_1.r_data_c) begin
-            $display("error: cycle:%03d\tr_data_c:0x%8x\tcg.core_1.r_data_c:0x%8x",c,r_data_c,cg.core_1.r_data_c);  
-        end 
-        if (r_data_0 != cg.core_1.r_data_0) begin
-            $display("error: cycle:%03d\tr_data_0:0x%8x\tcg.core_1.r_data_0:0x%8x",c,r_data_0,cg.core_1.r_data_0);  
-        end 
-        if (r_data_1 != cg.core_1.r_data_1) begin
-            $display("error: cycle:%03d\tr_data_1:0x%8x\tcg.core_1.r_data_1:0x%8x",c,r_data_1,cg.core_1.r_data_1);  
-        end 
-        if (we != cg.core_1.we) begin
-            $display("error: cycle:%03d\twe:0x%8x\tcg.core_1.we:0x%8x\n",c,we,cg.core_1.we);
-        end 
-        if (w_data != cg.core_1.w_data) begin
-            $display("error: cycle:%03d\tw_data:0x%8x\tcg.core_1.w_data:0x%8x",c,w_data,cg.core_1.w_data);
-        end 
-        if (w_addr != cg.core_1.w_addr) begin
-            $display("error: cycle:%03d\tw_addr:0x%8x\tcg.core_1.w_addr:0x%8x",c,w_addr,cg.core_1.w_addr);
-        end
-        i=i+1;
     end while (!$feof(f_csv_core_0) && !$feof(f_csv_core_1));
     $fclose(f_csv_core_0);
     $fclose(f_csv_core_1);

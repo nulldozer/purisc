@@ -47,7 +47,7 @@ vlog -sv -work work {../../testbench.sv}
 
 vsim -t 1ps -L altera_mf -L rtl_work -L work -voptargs="+acc"  compute_group_testbench
 
-add wave *
+#add wave *
 view structure
 view signals
 run 100ns
