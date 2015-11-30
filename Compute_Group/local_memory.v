@@ -37,19 +37,19 @@ input clock_50;
 input reset_n;
 
 //connections to io controller
-output [16:0] lm_ioc_addr,
-input ioc_lm_re,  // ioc reads from lm
-output [31:0] lm_ioc_data,
-input ioc_lm_we,  // ioc writes to lm
-input ioc_lm_addr,
-input [31:0] ioc_lm_data,
+output [16:0] lm_ioc_addr;
+input ioc_lm_re;  // ioc reads from lm
+output [31:0] lm_ioc_data;
+input ioc_lm_we;  // ioc writes to lm
+input ioc_lm_addr;
+input [31:0] ioc_lm_data;
 
 //connections to global memory
-output [16:0] lm_gm_addr,
-output [31:0] lm_gm_data, // lm writes to gm
-output lm_gm_we,
-output lm_gm_re,   // lm reads from gm
-input [31:0] gm_lm_data,
+output [16:0] lm_gm_addr;
+output [31:0] lm_gm_data; // lm writes to gm
+output lm_gm_we;
+output lm_gm_re;   // lm reads from gm
+input [31:0] gm_lm_data;
 
 //connections to cpu0
 output [16:0] c0_lm_addr_a;
